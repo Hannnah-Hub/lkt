@@ -117,3 +117,122 @@ public class ArduinoController : MonoBehaviour
     }
 }
 ```
+两个led灯arduino代码：接受到a led2亮0.3秒 接收到b led1亮0.3秒
+```C++
+// 引脚定义
+const int redPin1 = 9;  // LED1 的红色引脚
+const int greenPin1 = 10;  // LED1 的绿色引脚
+const int bluePin1 = 11;  // LED1 的蓝色引脚
+
+const int redPin2 = 5;  // LED2 的红色引脚
+const int greenPin2 = 3;  // LED2 的绿色引脚
+const int bluePin2 = 6;  // LED2 的蓝色引脚
+
+
+void setup() {
+  // 初始化引脚模式
+  pinMode(redPin1, OUTPUT);
+  pinMode(greenPin1, OUTPUT);
+  pinMode(bluePin1, OUTPUT);
+  pinMode(redPin2, OUTPUT);
+  pinMode(greenPin2, OUTPUT);
+  pinMode(bluePin2, OUTPUT);
+
+  // 初始化串口
+  Serial.begin(115200);  // 设置串口波特率为9600
+}
+
+void loop() {
+  // 检查串口是否有数据
+  if (Serial.available() > 0) {
+    // 读取串口数据（字符）
+    char receivedChar = Serial.read();
+    
+    // 根据接收到的字符控制 LED
+    if (receivedChar == 'a') {
+      // 如果收到 'a'，亮起 LED1 红色
+      digitalWrite(redPin1, LOW);    // 开启红色引脚
+      digitalWrite(greenPin1, HIGH);   // 关闭绿色引脚
+      digitalWrite(bluePin1, HIGH);    // 关闭蓝色引脚
+
+      // 保持 LED2 的原始颜色（不改变它）
+      
+      delay(300);  // LED1 持续亮起 0.3 秒
+      // 熄灭 LED1
+      digitalWrite(redPin1, LOW);
+      digitalWrite(greenPin1, LOW);
+      digitalWrite(bluePin1, LOW);
+    }
+    else if (receivedChar == 'b') {
+      digitalWrite(redPin2, HIGH);    // 开启红色引脚
+      digitalWrite(greenPin2, LOW);   // 关闭绿色引脚
+      digitalWrite(bluePin2, LOW);    // 关闭蓝色引脚
+
+
+      delay(300);  // LED2 保持原色，持续 0.3 秒
+
+      digitalWrite(redPin2, LOW);
+      digitalWrite(greenPin2, LOW);
+      digitalWrite(bluePin2, LOW);
+    }
+  }
+}
+```
+unity代码
+```C#
+using System.Collections;
+using System.IO.Ports;
+using UnityEngine;
+
+public class BlinkObjects : MonoBehaviour
+{
+    public float cueInterval = 1f;  // 控制字符间隔时间
+    private SerialPort serialPort;   // 串口对象
+
+    private void Start()
+    {
+        // 初始化串口（修改为你实际的串口号）
+        serialPort = new SerialPort("COM8", 115200);  // 修改为你实际的串口号
+        serialPort.Open();  // 打开串口连接
+        serialPort.ReadTimeout = 100;  // 设置读取超时
+
+        // 开始协程，模拟闪烁效果并发送数据
+        StartCoroutine(BlinkObjectsCoroutine());
+    }
+
+    private IEnumerator BlinkObjectsCoroutine()
+    {
+        while (true)
+        {
+            // 发送 'a' 到 Arduino
+            if (serialPort.IsOpen)
+            {
+                serialPort.Write("a");
+                Debug.Log("a");  // 控制台输出已发送的字符
+            }
+
+            // 等待指定的间隔时间
+            yield return new WaitForSeconds(cueInterval);
+
+            // 发送 'b' 到 Arduino
+            if (serialPort.IsOpen)
+            {
+                serialPort.Write("b");
+                Debug.Log("b");  // 控制台输出已发送的字符
+            }
+
+            // 等待指定的间隔时间
+            yield return new WaitForSeconds(cueInterval);
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        // 程序退出时关闭串口
+        if (serialPort.IsOpen)
+        {
+            serialPort.Close();
+        }
+    }
+}
+```
